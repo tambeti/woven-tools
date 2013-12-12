@@ -1,6 +1,6 @@
 *~
 *.o
-dbreader
-db-to-protobuf
+db-verify
+db-dump
 gemstone.pb.*
 *.dSYM

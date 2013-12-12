@@ -10,7 +10,7 @@ $ brew install leveldb
 
 TOOLS
 
-* dbreader
+* db-verify
 Prints information about the content of the database and verifies consistency.
 
 * db-dump

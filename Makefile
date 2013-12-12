@@ -1,6 +1,6 @@
 CFLAGS = -g -Wall -std=c++11
 
-all: dbreader db-to-protobuf
+all: db-verify db-dump
 
 gemstone.pb.h:
 	protoc --cpp_out=./ gemstone.proto
@@ -8,20 +8,20 @@ gemstone.pb.h:
 gemstone.pb.o: gemstone.pb.h
 	g++ $(CFLAGS) -c gemstone.pb.cc
 
-dbreader.o: dbreader.cc constants.h
-	g++ $(CFLAGS) -c dbreader.cc
+db-verify.o: db-verify.cc constants.h
+	g++ $(CFLAGS) -c db-verify.cc
 
-db-to-protobuf.o: db-to-protobuf.cc constants.h
-	g++ $(CFLAGS) -c db-to-protobuf.cc
+db-dump.o: db-dump.cc constants.h
+	g++ $(CFLAGS) -c db-dump.cc
 
-dbreader: gemstone.pb.o dbreader.o
-	g++ gemstone.pb.o dbreader.o -lleveldb `pkg-config --libs protobuf` -o $@
+db-verify: gemstone.pb.o db-verify.o
+	g++ gemstone.pb.o db-verify.o -lleveldb `pkg-config --libs protobuf` -o $@
 
-db-to-protobuf: gemstone.pb.o db-to-protobuf.o
-	g++ gemstone.pb.o db-to-protobuf.o -lleveldb `pkg-config --libs protobuf` -o $@
+db-dump: gemstone.pb.o db-dump.o
+	g++ gemstone.pb.o db-dump.o -lleveldb `pkg-config --libs protobuf` -o $@
 
 clean:
 	rm -f *.o
 	rm -f gemstone.pb.*
-	rm -f dbreader db-to-protobuf
+	rm -f db-verify db-dump
 
