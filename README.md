@@ -8,10 +8,14 @@ You'll need protobuf and leveldb libraries, which are easy to get on osx with br
 $ brew install protobuf
 $ brew install leveldb
 
+GETTING THE DATABASE FROM WOVEN
+
+adb pull /sdcard/Android/data/com.litl.FireDrill/files ./
+
 TOOLS
 
-* db-verify
+* db-verify <path to database directory>
 Prints information about the content of the database and verifies consistency.
 
-* db-dump
+* db-dump <path to database directory>
 Prints all data entries (so no indices).
