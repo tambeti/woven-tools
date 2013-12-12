@@ -8,6 +8,10 @@ You'll need protobuf and leveldb libraries, which are easy to get on osx with br
 $ brew install protobuf
 $ brew install leveldb
 
+After that, everything should be ready, compile with:
+
+$ make
+
 GETTING THE DATABASE FROM WOVEN
 
 adb pull /sdcard/Android/data/com.litl.FireDrill/files ./
