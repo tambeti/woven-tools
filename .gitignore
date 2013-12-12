@@ -1,0 +1,6 @@
+*~
+*.o
+dbreader
+db-to-protobuf
+gemstone.pb.*
+*.dSYM
