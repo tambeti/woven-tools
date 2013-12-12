@@ -5,6 +5,9 @@ all: db-verify db-dump
 gemstone.pb.h:
 	protoc --cpp_out=./ gemstone.proto
 
+gemstone-id.o: gemstone-id.cc gemstone-id.h
+	g++ $(CFLAGS) -c gemstone-id.cc
+
 gemstone.pb.o: gemstone.pb.h
 	g++ $(CFLAGS) -c gemstone.pb.cc
 
@@ -14,8 +17,8 @@ db-verify.o: db-verify.cc constants.h
 db-dump.o: db-dump.cc constants.h
 	g++ $(CFLAGS) -c db-dump.cc
 
-db-verify: gemstone.pb.o db-verify.o
-	g++ gemstone.pb.o db-verify.o -lleveldb `pkg-config --libs protobuf` -o $@
+db-verify: gemstone.pb.o db-verify.o gemstone-id.o
+	g++ gemstone.pb.o gemstone-id.o db-verify.o -lleveldb `pkg-config --libs protobuf` -o $@
 
 db-dump: gemstone.pb.o db-dump.o
 	g++ gemstone.pb.o db-dump.o -lleveldb `pkg-config --libs protobuf` -o $@

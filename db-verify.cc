@@ -1,8 +1,10 @@
 #include <iostream>
+#include <unordered_set>
 #include <leveldb/db.h>
 
 #include "gemstone.pb.h"
 #include "constants.h"
+#include "gemstone-id.h"
 
 using namespace std;
 
@@ -102,6 +104,18 @@ static leveldb::Status lookup_group(leveldb::DB* db, const char* id, string* val
   return db->Get(leveldb::ReadOptions(), slice, value);
 }
 
+static leveldb::Status lookup_group(leveldb::DB* db, GemstoneId& id) {
+  int key_len = 2 + GEMSTONE_ID_LEN;
+  char key[key_len];
+  key[0] = RECORD_DATA;
+  key[1] = GROUP;
+  memcpy(key + 2, id.data().data(), GEMSTONE_ID_LEN);
+  leveldb::Slice slice(key, key_len);
+
+  string value;
+  return db->Get(leveldb::ReadOptions(), slice, &value);
+}
+
 static leveldb::Status lookup_photo(leveldb::DB* db, const char* id, string* value) {
   int key_len = 2 + GEMSTONE_ID_LEN;
   char key[key_len];
@@ -111,6 +125,18 @@ static leveldb::Status lookup_photo(leveldb::DB* db, const char* id, string* val
   leveldb::Slice slice(key, key_len);
 
   return db->Get(leveldb::ReadOptions(), slice, value);
+}
+
+static leveldb::Status lookup_photo(leveldb::DB* db, GemstoneId& id) {
+  int key_len = 2 + GEMSTONE_ID_LEN;
+  char key[key_len];
+  key[0] = RECORD_DATA;
+  key[1] = PHOTO;
+  memcpy(key + 2, id.data().data(), GEMSTONE_ID_LEN);
+  leveldb::Slice slice(key, key_len);
+
+  string value;
+  return db->Get(leveldb::ReadOptions(), slice, &value);
 }
 
 static void validate_group_pos_index(leveldb::DB* db) {
@@ -201,6 +227,89 @@ static void validate_group_photo_index(leveldb::DB* db) {
   delete it;
 }
 
+static void load_sources(leveldb::DB* db, unordered_set<string>& set) {
+  char key[] = { RECORD_DATA, SOURCE };
+  leveldb::Slice slice(key, 2);
+
+  leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
+  for (it->Seek(slice); it->Valid() && it->key().starts_with(slice); it->Next()) {
+    GemstoneId id(it->key().data() + 2);
+    set.insert(id.ToString());
+  }
+
+  delete it;
+}
+
+static void print_target_id_error(const char* msg, GemstoneId source_id,
+                                  char target_type, GemstoneId target_id) {
+
+  string target_type_str;
+  switch (target_type) {
+  case SOURCE_IDX_GROUP:
+    target_type_str = string("group");
+    break;
+  case SOURCE_IDX_PHOTO:
+    target_type_str = string("photo");
+    break;
+  case SOURCE_IDX_VIDEO:
+    target_type_str = string("video");
+    break;
+  default:
+    target_type_str = string("unknown");
+  }
+
+  cerr << "Source index error: "
+       << msg << " " << source_id.ToString() << " "
+       << target_type_str << " " << target_id.ToString() << endl;
+}
+
+static void validate_source_index(leveldb::DB* db) {
+  unordered_set<string> sources;
+  load_sources(db, sources);
+
+  char key[] = { RECORD_SOURCE_IDX };
+  leveldb::Slice slice(key, 1);
+
+  int key_len = 1 + 1 + 8 + 2 * GEMSTONE_ID_LEN;
+
+  leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
+  for (it->Seek(slice); it->Valid() && it->key().starts_with(slice); it->Next()) {
+    if (it->key().size() != key_len) {
+      cerr << "Invalid source index key" << endl;
+      continue;
+    }
+
+    GemstoneId source_id(it->key().data() + 1);
+    char target_type = it->key().data()[1 + GEMSTONE_ID_LEN + 8];
+    GemstoneId target_id(it->key().data() + 1 + GEMSTONE_ID_LEN + 8 + 1);
+
+    if (sources.find(source_id.ToString()) == sources.end()) {
+        print_target_id_error("source not found", source_id, target_type,
+                              target_id);
+    }
+
+    switch (target_type) {
+    case SOURCE_IDX_GROUP:
+      if (!lookup_group(db, target_id).ok()) {
+        print_target_id_error("group not found", source_id, target_type,
+                              target_id);
+      }
+      break;
+    case SOURCE_IDX_PHOTO:
+    case SOURCE_IDX_VIDEO:
+      if (!lookup_photo(db, target_id).ok()) {
+        print_target_id_error("photo not found", source_id, target_type,
+                              target_id);
+      }
+      break;
+    default:
+      break;
+    }
+  }
+
+  delete it;
+}
+
 int main(int argc, char* argv[]) {
   if (argc != 2) {
     string name = string(argv[0]);
@@ -225,8 +334,7 @@ int main(int argc, char* argv[]) {
   validate_group_pos_index(db);
   validate_photo_pos_index(db);
   validate_group_photo_index(db);
-
-  //print_photo(db, "52a80faf50596e03665409c7");
+  validate_source_index(db);
 
   delete db;
 
