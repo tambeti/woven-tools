@@ -10,11 +10,11 @@ static void print_protobuf(leveldb::DB* db) {
   char key[] = { RECORD_DATA };
   leveldb::Slice slice(key, 1);
 
-  Envelope envelope;
-  User user;
-  Source source;
-  Group group;
-  Photo photo;
+  gemstone_protobuf::Envelope envelope;
+  gemstone_protobuf::User user;
+  gemstone_protobuf::Source source;
+  gemstone_protobuf::Group group;
+  gemstone_protobuf::Photo photo;
 
   leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
   for (it->Seek(slice); it->Valid() && it->key().starts_with(slice); it->Next()) {
@@ -22,7 +22,7 @@ static void print_protobuf(leveldb::DB* db) {
     string value = it->value().ToString();
 
     switch (data_type) {
-    case ENVELOPE:
+    case gemstone_protobuf::ENVELOPE:
       if (envelope.ParseFromString(value)) {
         cout << "ENVELOPE" << endl;
         envelope.PrintDebugString();
@@ -31,7 +31,7 @@ static void print_protobuf(leveldb::DB* db) {
         cerr << "Could not parse envelope" << endl;
       }
       break;
-    case USER:
+    case gemstone_protobuf::USER:
       if (user.ParseFromString(value)) {
         cout << "USER" << endl;
         user.PrintDebugString();
@@ -40,7 +40,7 @@ static void print_protobuf(leveldb::DB* db) {
         cerr << "Could not parse user" << endl;
       }
       break;
-    case SOURCE:
+    case gemstone_protobuf::SOURCE:
       if (source.ParseFromString(value)) {
         cout << "SOURCE" << endl;
         source.PrintDebugString();
@@ -49,7 +49,7 @@ static void print_protobuf(leveldb::DB* db) {
         cerr << "Could not parse source" << endl;
       }
       break;
-    case GROUP:
+    case gemstone_protobuf::GROUP:
       if (group.ParseFromString(value)) {
         cout << "GROUP" << endl;
         group.PrintDebugString();
@@ -58,7 +58,7 @@ static void print_protobuf(leveldb::DB* db) {
         cerr << "Could not parse group" << endl;
       }
       break;
-    case PHOTO:
+    case gemstone_protobuf::PHOTO:
       if (photo.ParseFromString(value)) {
         cout << "PHOTO" << endl;
         photo.PrintDebugString();
