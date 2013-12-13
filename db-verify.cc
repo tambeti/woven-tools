@@ -87,6 +87,12 @@ static void count_rows(leveldb::DB* db) {
 
 }
 
+static long read_long(const char* bytes) {
+  long v;
+  memcpy(&v, bytes, 8);
+  return __builtin_bswap64(v);
+}
+
 static void print_id(const char* id) {
   for (int i = 0; i < GEMSTONE_ID_LEN; ++i) {
     printf("%02x", id[i] & 0x00FF);
@@ -155,9 +161,10 @@ static void validate_group_pos_index(leveldb::DB* db) {
     const char* id = it->key().data() + 9;
     string value;
     if (!lookup_group(db, id, &value).ok()) {
+      long sort_key = read_long(it->key().data() + 1);
       cout << "Group pos index has invalid entry: ";
       print_id(id);
-      cout << endl;
+      cout << " sort_key: " << sort_key << endl;
     }
   }
 
@@ -180,9 +187,10 @@ static void validate_photo_pos_index(leveldb::DB* db) {
     const char* id = it->key().data() + 9;
     string value;
     if (!lookup_photo(db, id, &value).ok()) {
+      long sort_key = read_long(it->key().data() + 1);
       cout << "Photo pos index has invalid entry: ";
       print_id(id);
-      cout << endl;
+      cout << " sort_key: " << sort_key << endl;
     }
   }
 
@@ -216,9 +224,10 @@ static void validate_group_photo_index(leveldb::DB* db) {
     }
 
     if (!lookup_photo(db, photo_id, &value).ok()) {
+      long sort_key = read_long(it->key().data() + 1 + GEMSTONE_ID_LEN);
       cout << "Group photo index has invalid photo reference: ";
       print_id(group_id);
-      cout << " ";
+      cout << " sort_key: " << sort_key << " ";
       print_id(photo_id);
       cout << endl;
     }
