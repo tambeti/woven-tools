@@ -89,6 +89,11 @@ static long read_long(const char* bytes) {
   return __builtin_bswap64(v);
 }
 
+static void write_long(long l, char* bytes) {
+  long v = __builtin_bswap64(l);
+  memcpy(bytes, &v, 8);
+}
+
 static void print_id(const char* id) {
   for (int i = 0; i < GEMSTONE_ID_LEN; ++i) {
     printf("%02x", id[i] & 0x00FF);
@@ -141,7 +146,7 @@ static leveldb::Status lookup_photo(leveldb::DB* db, GemstoneId& id) {
   return db->Get(leveldb::ReadOptions(), slice, &value);
 }
 
-static void validate_group_pos_index(leveldb::DB* db) {
+static void check_group_pos_extra_rows(leveldb::DB* db) {
   char key[] = { RECORD_GROUP_POS };
   leveldb::Slice slice(key, 1);
 
@@ -167,7 +172,51 @@ static void validate_group_pos_index(leveldb::DB* db) {
   delete it;
 }
 
-static void validate_photo_pos_index(leveldb::DB* db) {
+static void check_group_pos_missing_rows(leveldb::DB* db) {
+  char key[] = { RECORD_DATA, GROUP };
+  leveldb::Slice key_slice(key, 2);
+
+  int pos_idx_len = 1 + 8 + GEMSTONE_ID_LEN;
+  char pos_idx[pos_idx_len];
+  pos_idx[0] = RECORD_GROUP_POS;
+  leveldb::Slice pos_idx_slice(pos_idx, pos_idx_len);
+
+  Group group;
+  string value;
+
+  leveldb::ReadOptions options;
+  leveldb::Iterator* it = db->NewIterator(options);
+  for (it->Seek(key_slice); it->Valid() && it->key().starts_with(key_slice); it->Next()) {
+    value = it->value().ToString();
+    if (group.ParseFromString(value)) {
+      if (group.type() != "favorite") {
+        write_long(group.ctime(), pos_idx + 1);
+      } else {
+        memset(pos_idx + 1, 0xff, 8);
+      }
+
+      GemstoneId id(group.id());
+      memcpy(pos_idx + 9, id.data().data(), GEMSTONE_ID_LEN);
+
+      leveldb::Status s = db->Get(options, pos_idx_slice, &value);
+      if (!s.ok()) {
+        cerr << "Group " << group.id() << " is not in position index" << endl;
+      }
+    } else {
+      cerr << "Could not parse group" << endl;
+    }
+  }
+
+  delete it;
+}
+
+static void validate_group_pos_index(leveldb::DB* db) {
+  check_group_pos_extra_rows(db);
+  check_group_pos_missing_rows(db);
+}
+
+
+static void check_photo_pos_extra_rows(leveldb::DB* db) {
   char key[] = { RECORD_PHOTO_POS };
   leveldb::Slice slice(key, 1);
 
@@ -191,6 +240,47 @@ static void validate_photo_pos_index(leveldb::DB* db) {
   }
 
   delete it;
+}
+
+static void check_photo_pos_missing_rows(leveldb::DB* db) {
+  char key[] = { RECORD_DATA, PHOTO };
+  leveldb::Slice key_slice(key, 2);
+
+  int pos_idx_len = 1 + 8 + GEMSTONE_ID_LEN;
+  char pos_idx[pos_idx_len];
+  pos_idx[0] = RECORD_PHOTO_POS;
+  leveldb::Slice pos_idx_slice(pos_idx, pos_idx_len);
+
+  Photo photo;
+  string value;
+
+  leveldb::ReadOptions options;
+  leveldb::Iterator* it = db->NewIterator(options);
+  for (it->Seek(key_slice); it->Valid() && it->key().starts_with(key_slice); it->Next()) {
+    value = it->value().ToString();
+    if (photo.ParseFromString(value)) {
+      if (photo.timeline_skip())
+        continue;
+
+      GemstoneId id(photo.id());
+      write_long(photo.ctime(), pos_idx + 1);
+      memcpy(pos_idx + 9, id.data().data(), GEMSTONE_ID_LEN);
+
+      leveldb::Status s = db->Get(options, pos_idx_slice, &value);
+      if (!s.ok()) {
+        cerr << "Photo " << photo.id() << " is not in position index" << endl;
+      }
+    } else {
+      cerr << "Could not parse photo" << endl;
+    }
+  }
+
+  delete it;
+}
+
+static void validate_photo_pos_index(leveldb::DB* db) {
+  check_photo_pos_extra_rows(db);
+  check_photo_pos_missing_rows(db);
 }
 
 static void validate_group_photo_index(leveldb::DB* db) {
