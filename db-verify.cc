@@ -7,6 +7,7 @@
 #include "gemstone-id.h"
 
 using namespace std;
+using namespace gemstone_protobuf;
 
 static void count_rows(leveldb::DB* db) {
   leveldb::ReadOptions options;

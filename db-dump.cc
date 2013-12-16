@@ -5,6 +5,7 @@
 #include "constants.h"
 
 using namespace std;
+using namespace gemstone_protobuf;
 
 static void print_protobuf(leveldb::DB* db) {
   char key[] = { RECORD_DATA };
