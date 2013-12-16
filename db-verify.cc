@@ -81,11 +81,6 @@ static void count_rows(leveldb::DB* db) {
   if (groups != group_pos)
     cerr << "Invalid group position index entries: " << group_pos
          << " (groups: " << groups << ")" << endl;
-
-  if (photos != photo_pos)
-    cerr << "Invalid photo position index entries: " << photo_pos
-         << " (photos: " << photos << ")" << endl;
-
 }
 
 static long read_long(const char* bytes) {
