@@ -30,19 +30,19 @@ static void count_rows(leveldb::DB* db) {
     case RECORD_DATA: {
       int data_type = it->key()[1];
       switch (data_type) {
-      case ENVELOPE:
+      case gemstone_protobuf::ENVELOPE:
         envelopes++;
         break;
-      case USER:
+      case gemstone_protobuf::USER:
         users++;
         break;
-      case SOURCE:
+      case gemstone_protobuf::SOURCE:
         source++;
         break;
-      case GROUP:
+      case gemstone_protobuf::GROUP:
         groups++;
         break;
-      case PHOTO:
+      case gemstone_protobuf::PHOTO:
         photos++;
         break;
       }
@@ -104,7 +104,7 @@ static leveldb::Status lookup_group(leveldb::DB* db, const char* id, string* val
   int key_len = 2 + GEMSTONE_ID_LEN;
   char key[key_len];
   key[0] = RECORD_DATA;
-  key[1] = GROUP;
+  key[1] = gemstone_protobuf::GROUP;
   memcpy(key + 2, id, GEMSTONE_ID_LEN);
   leveldb::Slice slice(key, key_len);
 
@@ -115,7 +115,7 @@ static leveldb::Status lookup_group(leveldb::DB* db, GemstoneId& id) {
   int key_len = 2 + GEMSTONE_ID_LEN;
   char key[key_len];
   key[0] = RECORD_DATA;
-  key[1] = GROUP;
+  key[1] = gemstone_protobuf::GROUP;
   memcpy(key + 2, id.data().data(), GEMSTONE_ID_LEN);
   leveldb::Slice slice(key, key_len);
 
@@ -127,7 +127,7 @@ static leveldb::Status lookup_photo(leveldb::DB* db, const char* id, string* val
   int key_len = 2 + GEMSTONE_ID_LEN;
   char key[key_len];
   key[0] = RECORD_DATA;
-  key[1] = PHOTO;
+  key[1] = gemstone_protobuf::PHOTO;
   memcpy(key + 2, id, GEMSTONE_ID_LEN);
   leveldb::Slice slice(key, key_len);
 
@@ -138,7 +138,7 @@ static leveldb::Status lookup_photo(leveldb::DB* db, GemstoneId& id) {
   int key_len = 2 + GEMSTONE_ID_LEN;
   char key[key_len];
   key[0] = RECORD_DATA;
-  key[1] = PHOTO;
+  key[1] = gemstone_protobuf::PHOTO;
   memcpy(key + 2, id.data().data(), GEMSTONE_ID_LEN);
   leveldb::Slice slice(key, key_len);
 
@@ -323,7 +323,7 @@ static void validate_group_photo_index(leveldb::DB* db) {
 }
 
 static void load_sources(leveldb::DB* db, unordered_set<string>& set) {
-  char key[] = { RECORD_DATA, SOURCE };
+  char key[] = { RECORD_DATA, gemstone_protobuf::SOURCE };
   leveldb::Slice slice(key, 2);
 
   leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
