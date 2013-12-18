@@ -2,5 +2,6 @@
 *.o
 db-verify
 db-dump
+protobuf-parser
 gemstone.pb.*
 *.dSYM

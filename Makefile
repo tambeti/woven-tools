@@ -1,6 +1,6 @@
 CFLAGS = -g -Wall -std=c++11
 
-all: db-verify db-dump
+all: db-verify db-dump protobuf-parser
 
 gemstone.pb.h:
 	protoc --cpp_out=./ gemstone.proto
@@ -23,8 +23,14 @@ db-verify: gemstone.pb.o db-verify.o gemstone-id.o
 db-dump: gemstone.pb.o db-dump.o
 	g++ gemstone.pb.o db-dump.o -lleveldb `pkg-config --libs protobuf` -o $@
 
+protobuf-parser.o: protobuf-parser.cc constants.h
+	g++ $(CFLAGS) -c protobuf-parser.cc `pkg-config --cflags protobuf`
+
+protobuf-parser: gemstone.pb.o protobuf-parser.o
+	g++ gemstone.pb.o protobuf-parser.o `pkg-config --libs protobuf` -o $@
+
 clean:
 	rm -f *.o
 	rm -f gemstone.pb.*
-	rm -f db-verify db-dump
+	rm -f db-verify db-dump protobuf-parser
 
